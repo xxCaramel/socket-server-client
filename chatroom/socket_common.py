@@ -18,6 +18,7 @@ class SocketConf:
     HEADER: int = 64
     FORMAT: str = "utf-8"
     DISCONNECT: str = "SCKBR"
+    SERVER_ID: str = "[SERVER]"
         
 
 
@@ -28,6 +29,7 @@ class ServerConf(SocketConf):
         MAX_CONN: Número máximo de conecciones
     '''
     MAX_CONN: int = 5
+   
     
 @dataclass
 class ClientConf(SocketConf):
