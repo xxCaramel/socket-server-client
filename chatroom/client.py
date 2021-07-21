@@ -1,4 +1,5 @@
 import socket
+import json
 from socket_common import ClientConf as conf
 
 class Client:
@@ -39,7 +40,16 @@ class Client:
         '''
         self.send_message(conf.DISCONNECT)
 
-    def send_message(self,payload):
+    def __prepare_json(self,payload,dest,group):
+        payload = {
+            "dest":dest,
+            "group":group,
+            "payload":payload,
+        }
+
+        return json.dumps(payload)
+
+    def send_message(self,payload,dest,group=False):
         '''Manda el mensaje al servidor
            Parametros:
                 payload: Mensaje para enviar al servidor
@@ -50,10 +60,12 @@ class Client:
 
         '''
         if self.__connection_set:
-            payload = payload.encode(conf.FORMAT)
+            #Informa a server el len del mensaje antes de mandarlo
+            payload = self.__prepare_json(payload,dest,group).encode(conf.FORMAT)
             payload_header = str(len(payload)).encode(conf.FORMAT)
             payload_header += b' ' * (conf.HEADER-len(payload_header))
             
+            print(payload,payload_header)
             self.__socket_client.send(payload_header)
             self.__socket_client.send(payload)
             return True

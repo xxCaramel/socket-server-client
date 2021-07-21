@@ -1,6 +1,7 @@
 import socket
 import threading
 import sys
+import json
 
 from socket_common import ServerConf as conf
 
@@ -27,6 +28,7 @@ class ServerTCP():
             socket.AF_INET,socket.SOCK_STREAM
         )
 
+        #Libera server_ip despues de cerrar
         self.__server_socket.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
 
 
@@ -41,27 +43,28 @@ class ServerTCP():
             sys.exit()
 
     
-    def __handle_client(self,conn,addr):
+    def __handle_client(self,client):
 
-        new_conn_msg = f"[NEW CLIENT] {addr[0]}{addr[1]}\n"
+        new_conn_msg = "[CONNECTED] {}".format(client["id"])
         #self.__broadcast(new_conn_msg)
         print(new_conn_msg)
-
+        
+        conn = client["conn"]
         conn_status = True
         while conn_status:
             message_head = conn.recv(conf.HEADER).decode(conf.FORMAT)
-            if message_head:      
-                message_len = int(message_head)
-                message = conn.recv(message_len).decode(conf.FORMAT)
-
-    
-                print(message is conf.DISCONNECT)
-                print(message)
-                print(conf.DISCONNECT)
-                if message == conf.DISCONNECT:
+            if message_head: # Asegurar que no este vacio
+                try:
+                    message_len = int(message_head)
+                    message = conn.recv(message_len).decode(conf.FORMAT)
+                    msg = json.loads(message)
+                    if message == conf.DISCONNECT:
+                        conn_status = False
+                    else:
+                        print("[{}]: {}".format(client["id"],msg["payload"]))
+                except ValueError as err:
+                    print(f"[FAILED] Likely incorrect Format or Header\n {err}")
                     conn_status = False
-                else:
-                    print(f"[{addr[0]}] {message}")
 
         print("Closing Client")
         conn.close()
@@ -102,6 +105,7 @@ class ServerTCP():
 
         while True:
             conn, addr = self.__server_socket.accept()
-            self.__clients.append(self._new_client(addr[0],conn))
-            client_t = threading.Thread(target=self.__handle_client,args=(conn,addr))
+            client = self._new_client(addr[1],conn)
+            self.__clients.append(client)
+            client_t = threading.Thread(target=self.__handle_client,args=(client,))
             client_t.start()
