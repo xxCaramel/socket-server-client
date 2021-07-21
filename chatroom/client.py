@@ -1,5 +1,6 @@
 import socket
 import json
+import threading
 from socket_common import ClientConf as conf
 
 class Client:
@@ -22,6 +23,8 @@ class Client:
         self.__socket_client = socket.socket(
             socket.AF_INET,socket.SOCK_STREAM)
         self.__connect_client()
+        client_listen = threading.Thread(target=self.__listen)
+        client_listen.start()
 
     def __connect_client(self):
 
@@ -38,7 +41,8 @@ class Client:
         '''Cierra la conexión con el servidor mandando el mensaje 
            definido DISCONNECT en socket_common
         '''
-        self.send_message(conf.DISCONNECT)
+        self.send_message(conf.DISCONNECT,None)
+        self.__connection_set = False
 
     def __prepare_json(self,payload,dest,group):
         payload = {
@@ -48,6 +52,21 @@ class Client:
         }
 
         return json.dumps(payload)
+
+    def __listen(self):
+
+        conn = self.__socket_client
+        while self.__connection_set:
+            message_head = conn.recv(conf.HEADER).decode(conf.FORMAT)
+            if message_head: # Asegurar que no este vacio
+                try:
+                    message_len = int(message_head)
+                    message = conn.recv(message_len).decode(conf.FORMAT)
+                    msg = json.loads(message)
+                    print("[>>][{}]: {}".format(msg["from"],msg["payload"]))
+                except ValueError as err:
+                    print(f"[FAILED] Likely incorrect Format or Header\n {err}")
+                    self.__connection_set = False
 
     def send_message(self,payload,dest,group=False):
         '''Manda el mensaje al servidor

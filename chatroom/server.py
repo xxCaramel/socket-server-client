@@ -58,9 +58,10 @@ class ServerTCP():
                     message_len = int(message_head)
                     message = conn.recv(message_len).decode(conf.FORMAT)
                     msg = json.loads(message)
-                    if message == conf.DISCONNECT:
+                    if msg["payload"] == conf.DISCONNECT:
                         conn_status = False
                     else:
+                        self.__broadcast(msg,client["id"])
                         print("[{}]: {}".format(client["id"],msg["payload"]))
                 except ValueError as err:
                     print(f"[FAILED] Likely incorrect Format or Header\n {err}")
@@ -80,7 +81,7 @@ class ServerTCP():
                 Diccionario con keys: id y conn
         """
         client = {
-            "id":name,
+            "id":str(name),
             "conn":conn
         }
         return client
@@ -91,9 +92,28 @@ class ServerTCP():
         for client in self.__clients:
             print("[CLIENT]{}".format(client["id"]))
 
-    def __broadcast(self,message):
+    def __broadcast(self,payload,client_id):
+
+        payload_msg = {
+            "from":client_id,
+            "payload":payload["payload"]
+
+        }
+
+        dest = None
         for client in self.__clients:
-            client["conn"].send(message.encode(conf.FORMAT))
+            if client["id"] == payload["dest"]:
+                dest = client["conn"]
+        
+        payload_json = json.dumps(payload_msg).encode(conf.FORMAT)
+        payload_header = str(len(payload_json)).encode(conf.FORMAT)
+        payload_header += b' ' * (conf.HEADER-len(payload_header))
+        
+        if dest:
+            dest.send(payload_header)
+            dest.send(payload_json)
+        else:
+            print("No one to send to")
 
     def init(self):
         '''Inicializa sevidor con los parametros definidos
