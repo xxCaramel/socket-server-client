@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 
+
 @dataclass
-class SocketConf:
+class SocketConf():
     ''' Configuraciones para cliente y servidor
         Opciones:
             PORT:  Numero de puerto de conexión
@@ -10,7 +11,6 @@ class SocketConf:
                     Contiene la longitud del mensaje
             FORMAT: Formato en que se codifica la comuniación
             DISCONNECT: Mensaje para señalar fin de conexión
-
     '''
 
     PORT: int = 80
@@ -28,7 +28,7 @@ class ServerConf(SocketConf):
         
         MAX_CONN: Número máximo de conecciones
     '''
-    MAX_CONN: int = 5
+    MAX_CONN: int = 10
    
     
 @dataclass
