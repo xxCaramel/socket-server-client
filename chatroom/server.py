@@ -4,6 +4,8 @@ import sys
 import json
 
 from socket_common import ServerConf as conf
+from server_options import SeverOptions as opt
+from server_groups import ServerGroup
 
 class ServerTCP():
     '''
@@ -18,6 +20,7 @@ class ServerTCP():
         '''
 
         self.__clients = []
+        self.__groups = []
 
         if server_port:
             conf.PORT = server_port
@@ -46,7 +49,7 @@ class ServerTCP():
     def __handle_client(self,client):
 
         new_conn_msg = "[CONNECTED] {}".format(client["id"])
-        #self.__broadcast(new_conn_msg)
+    
         print(new_conn_msg)
         
         conn = client["conn"]
@@ -63,12 +66,15 @@ class ServerTCP():
                     if msg["opt"] != None:
                         response = self.__check_options(msg,client)
                         if not response: break
-
-                    self.__broadcast(msg,client["id"])
+                    if msg["group"] == True:
+                        self.__group_broadcast(client,msg)
+                    else:
+                        self.__broadcast(msg,client["id"])
                     print("[{}]: {}".format(client["id"],msg["payload"]))
                 except ValueError as err:
                     print(f"[FAILED] Likely incorrect Format or Header\n {err}")
                     conn_status = False
+                
 
         print("Closing Client")
         conn.close()
@@ -80,8 +86,10 @@ class ServerTCP():
         print(msg["opt"])
 
         valid=True
-        if msg["opt"] == "CHNGID":
+        if msg["opt"] == opt.CHGID:
             self.__change_id(client,msg),
+        elif msg["opt"] == opt.CHGRP:
+            self.__new_group(client,msg)
         else:
             valid=False
         
@@ -89,6 +97,22 @@ class ServerTCP():
             print("[INVALID OPT]")
         
         return True
+
+    def __new_group(self,client,msg):
+        
+        group = msg["payload"]
+        name = group["name"]
+        admin = client["id"]
+        
+        users = group["users"]
+        conns = [client]
+        for _client,user in zip(self.__clients,users):
+            if _client["id"] == user:
+                conns.append(_client)
+
+        
+        new_group = ServerGroup(name,admin,conns)
+        self.__groups.append(new_group)
 
     def __change_id(self,client,msg):
         available = True
@@ -132,7 +156,7 @@ class ServerTCP():
         for client in self.__clients:
             print("[CLIENT]{}".format(client["id"]))
 
-    def __broadcast(self,payload,sender_id):
+    def __broadcast(self,payload,sender_id,group=False):
         
         payload_msg = {
             "from":sender_id,
@@ -140,14 +164,12 @@ class ServerTCP():
 
         }
 
+        payload_header, payload_json = self.__encode_message(payload_msg)
+    
         dest=None
         for client in self.__clients:
             if client["id"] == payload["dest"]:
                 dest = client["conn"]
-    
-        payload_json = json.dumps(payload_msg).encode(conf.FORMAT)
-        payload_header = str(len(payload_json)).encode(conf.FORMAT)
-        payload_header += b' ' * (conf.HEADER-len(payload_header))
         
         if dest:
             dest.send(payload_header)
@@ -156,6 +178,40 @@ class ServerTCP():
             pass
         else:
             print("No one to send to")
+       
+    def __encode_message(self,msg):
+
+        payload_json = json.dumps(msg).encode(conf.FORMAT)
+        payload_header = str(len(payload_json)).encode(conf.FORMAT)
+        payload_header += b' ' * (conf.HEADER-len(payload_header))
+
+        return (payload_header,payload_json)
+
+            
+
+    def __group_broadcast(self,sender,payload):
+
+        payload_msg = {
+            "from":sender["id"],
+            "payload":payload["payload"]
+        }
+
+        payload_header, payload_json = self.__encode_message(payload_msg)
+
+        group = None
+        for g in self.__groups:
+            print("Group ",payload["group"])
+            if g.name == payload["dest"]:
+                group = g.users
+        if group:
+            for user in group:
+                print("SENDING TO GROUP")
+                if user["id"] != sender["id"]:
+                    user["conn"].send(payload_header)
+                    user["conn"].send(payload_json)
+            else:
+                print("no")
+                return
 
     def init(self):
         '''Inicializa sevidor con los parametros definidos

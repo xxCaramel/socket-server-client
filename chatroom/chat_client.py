@@ -1,5 +1,6 @@
 from client import Client
 from socket_common import ClientConf as conf
+from server_options import SeverOptions as opt
 
 class ChatClient(Client):
 
@@ -10,22 +11,25 @@ class ChatClient(Client):
     
 
     def request_nickname(self,nickname):
-        options = "CHNGID"
-        super().send_message(nickname,conf.SERVER_ID,False,options)
+        option = opt.CHGID
+        super().send_message(nickname,conf.SERVER_ID,False,option)
 
-    """
+    
     def request_addgroup(self,group_name,users,new_group=True):
-        options = "NWGRP"
+        options = opt.CHGRP
         if not new_group:
-            options = "ADDGRP"
+            options = opt.ADDGRP
 
         payload = {"name":group_name,"users":users}
         super().send_message(payload,conf.SERVER_ID,False,options)
 
-    """
     def __open_dm(self,user):
         self.__direct_msg = True
         self.__direct_usr = user
+
+    def __request_online(self):
+        option = opt.ALLUSR
+        super().send_message("Request",conf.SERVER_ID,False,option)
 
     def loop(self):
         while True:
