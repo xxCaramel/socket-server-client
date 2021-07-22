@@ -67,6 +67,7 @@ class ServerTCP():
                         response = self.__check_options(msg,client)
                         if not response: break
                     if msg["group"] == True:
+                        print("[GROUP INCOMING]")
                         self.__group_broadcast(client,msg)
                     else:
                         self.__broadcast(msg,client["id"])
@@ -90,6 +91,8 @@ class ServerTCP():
             self.__change_id(client,msg),
         elif msg["opt"] == opt.CHGRP:
             self.__new_group(client,msg)
+        elif msg["opt"] == opt.DELGRP:
+            self.__del_group(client,msg)
         else:
             valid=False
         
@@ -97,6 +100,16 @@ class ServerTCP():
             print("[INVALID OPT]")
         
         return True
+
+    def __del_group(self,client,msg):
+        
+        error_msg = {"dest":client["id"],"payload":"Grupo no borrado"}
+        for g in self.__groups:
+            if g.admin == client["id"] and g.name == msg["payload"]:
+                self.__groups.remove(g)
+                error_msg["payload"] = f"Grupo {g.name} Borrado"
+
+        self.__broadcast(error_msg,conf.SERVER_ID)
 
     def __new_group(self,client,msg):
         
@@ -106,13 +119,19 @@ class ServerTCP():
         
         users = group["users"]
         conns = [client]
-        for _client,user in zip(self.__clients,users):
-            if _client["id"] == user:
-                conns.append(_client)
+        for _client in self.__clients:
+            for user in users:
+                print("[BRUH]",_client["id"],user)
+                if _client["id"] == user:
+                    print("Added ",user)
+                    conns.append(_client)
 
         
         new_group = ServerGroup(name,admin,conns)
         self.__groups.append(new_group)
+        msg = {"dest":client["id"],"payload":"Grupo creado: {}".format(name)}
+
+        self.__broadcast(msg,conf.SERVER_ID)
 
     def __change_id(self,client,msg):
         available = True
@@ -129,7 +148,7 @@ class ServerTCP():
             response["dest"] = client["id"]
             response["payload"]="Nuevo Nombre: {}".format(msg["payload"])
         else:
-            response["payload"]="Nickname No Disponible"
+            response["payload"]="Nickname no disponible"
            
 
         self.__broadcast(response,conf.SERVER_ID)
@@ -200,18 +219,21 @@ class ServerTCP():
 
         group = None
         for g in self.__groups:
-            print("Group ",payload["group"])
+            print("Group ",g.users)
             if g.name == payload["dest"]:
                 group = g.users
         if group:
             for user in group:
-                print("SENDING TO GROUP")
+                print("[SENDING TO GROUP]")
+                print(user["id"],sender["id"])
                 if user["id"] != sender["id"]:
+                    print("[SEND TO] ",user["id"])
                     user["conn"].send(payload_header)
                     user["conn"].send(payload_json)
-            else:
-                print("no")
-                return
+                    print("[SEND GROUP DONE]")
+                
+            
+
 
     def init(self):
         '''Inicializa sevidor con los parametros definidos

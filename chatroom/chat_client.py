@@ -23,6 +23,11 @@ class ChatClient(Client):
         payload = {"name":group_name,"users":users}
         super().send_message(payload,conf.SERVER_ID,False,options)
 
+    def request_delgroup(self,group_name):
+        options = opt.DELGRP
+        payload = group_name
+        super().send_message(payload,None,False,options)
+
     def __open_dm(self,user):
         self.__direct_msg = True
         self.__direct_usr = user
