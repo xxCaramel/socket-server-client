@@ -28,18 +28,3 @@ class ChatClient(Client):
         payload = group_name
         super().send_message(payload,None,False,options)
 
-    def __open_dm(self,user):
-        self.__direct_msg = True
-        self.__direct_usr = user
-
-    def __request_online(self):
-        option = opt.ALLUSR
-        super().send_message("Request",conf.SERVER_ID,False,option)
-
-    def loop(self):
-        while True:
-            dm = input("Open Chat: ")
-            self.__open_dm(dm)
-            if self.__direct_msg:
-                msg = input("(SEND)")
-                super().send_message(msg,self.__direct_usr)

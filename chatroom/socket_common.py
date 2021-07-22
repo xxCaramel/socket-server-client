@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import socket 
 
 
 @dataclass
@@ -14,8 +15,8 @@ class SocketConf():
     '''
 
     PORT: int = 80
-    SERVER_IP: str = "127.0.0.1"
-    HEADER: int = 64
+    SERVER_IP: str = socket.gethostname()
+    HEADER: int = 128
     FORMAT: str = "utf-8"
     DISCONNECT: str = "SCKBR"
     SERVER_ID: str = "SERVER"
@@ -29,6 +30,7 @@ class ServerConf(SocketConf):
         MAX_CONN: Número máximo de conecciones
     '''
     MAX_CONN: int = 10
+    UPL_FOLD: str = "./uploads/"
    
     
 @dataclass

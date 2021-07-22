@@ -2,6 +2,7 @@ import socket
 import json
 import threading
 from socket_common import ClientConf as conf
+from server_options import SeverOptions 
 
 class Client:
 
@@ -18,6 +19,7 @@ class Client:
         self.__socket_client = None
         self.__connection_set = False
         self.__message_list = []
+        self.__file_dir = "./client/"
 
 
     @property
@@ -65,15 +67,21 @@ class Client:
         conn = self.__socket_client
         while self.__connection_set:
             message_head = conn.recv(conf.HEADER).decode(conf.FORMAT)
-            if message_head: # Asegurar que no este vacio
-                try:
-                    message_len = int(message_head)
-                    message = conn.recv(message_len).decode(conf.FORMAT)
-                    msg = json.loads(message)
-                    self.__message_list.append({"from":msg["from"],"payload":msg["payload"]})
-                except ValueError as err:
-                    print(f"[FAILED] Likely incorrect Format or Header\n {err}")
-                    self.__connection_set = False
+            if message_head: 
+                head = json.loads(message_head)
+                if head["opt"] == SeverOptions.FILESN:
+                    message_len = head["len"]
+                    message = conn.recv(message_len)
+                    self.__download_file(message,head["aux"])
+                else:
+                    try:
+                        message_len = head["len"]
+                        message = conn.recv(message_len).decode(conf.FORMAT)
+                        msg = json.loads(message)
+                        self.__message_list.append({"from":msg["from"],"payload":msg["payload"]})
+                    except ValueError as err:
+                        print(f"[FAILED] Likely incorrect Format or Header\n {err}")
+                        self.__connection_set = False
 
     def send_message(self,payload,dest,group=False,opt=None):
         '''Manda el mensaje al servidor
@@ -85,16 +93,73 @@ class Client:
                 False: si no hay conexión
 
         '''
+        
+        #Informa a server el len del mensaje antes de mandarlo
+        payload = self.__prepare_json(payload,dest,group,opt).encode(conf.FORMAT)
+        payload_header = self.__gen_head(len(payload),opt)
+        
+        if not self.__try_to_send(payload_header,payload):
+            print("No conectado")
+       
+       
+    def __gen_head(self,length,opt=None):
+
+        header =  {
+            "len":length,
+            "opt":opt
+        }
+
+        json_header = json.dumps(header).encode(conf.FORMAT)
+        padding = conf.HEADER - len(json_header)
+        json_header += b' ' * padding
+
+        return json_header
+
+    def __try_to_send(self,header,payload):
         if self.__connection_set:
-            #Informa a server el len del mensaje antes de mandarlo
-            payload = self.__prepare_json(payload,dest,group,opt).encode(conf.FORMAT)
-            payload_header = str(len(payload)).encode(conf.FORMAT)
-            payload_header += b' ' * (conf.HEADER-len(payload_header))
-            
-            print(payload,payload_header)
-            self.__socket_client.send(payload_header)
+            self.__socket_client.send(header)
             self.__socket_client.send(payload)
             return True
         else:
-            print("No Connection")
             return False
+    
+    def send_file(self,file_name,dest,group=False):
+
+        head_option = SeverOptions.FILESN
+        payload = self.__prepare_json(file_name,dest,group,head_option).encode(conf.FORMAT)
+        json_header = self.__gen_head(len(payload))
+
+        if not self.__try_to_send(json_header,payload):
+            print("No conectado")
+            return False
+
+
+    def __download_file(self,file,name):
+        if not name:
+            name = "default"
+        try:
+            file_name = "{}{}".format(self.__file_dir,name)
+            new_file = open(file_name,"wb")
+            new_file.write(file)
+            new_file.close()
+        except:
+            print("[Algo paso no se pudo descargar]")
+
+    def __upload_server(self,file):
+        file_len = len(file)
+        options = SeverOptions.FILEUP
+
+        json_header = self.__gen_head(file_len,options)
+
+        if not self.__try_to_send(json_header,file):
+            print("No conectado")
+
+    
+    def upload_file(self,file_name):
+        try:
+            file = open(file_name,"rb")
+            file_b = file.read()
+            self.__upload_server(file_b)
+            file.close()
+        except FileNotFoundError:
+            return 0

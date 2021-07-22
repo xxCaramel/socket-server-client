@@ -9,4 +9,6 @@ class SeverOptions:
     CHGID: int = 2
     DELGRP: int = 3
     ALLUSR: int = 4
+    FILESN: int = 5
+    FILEUP: int = 6
     

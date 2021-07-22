@@ -1,3 +1,4 @@
+from server_groups import ServerGroup
 import sys
 import threading
 
@@ -27,8 +28,9 @@ class App:
                 [3] Conectar
                 [4] Inbox
                 [5] Grupos
-                [6] Desconectar
-                [7] Salir
+                [6] Archivos
+                [7] Desconectar
+                [8] Salir
             """)
             option = self.__input()
             if self.__connected or (option==3):
@@ -62,8 +64,9 @@ class App:
             3:self.__connect,
             4:self.__get_messages,
             5:self.__groups,
-            6:self.__close,
-            7:self.__exit,
+            6:self.__file_menu,
+            7:self.__close,
+            8:self.__exit,
         }
 
         f = actions.get(option)
@@ -89,6 +92,23 @@ class App:
         new_name = input("[Nickname]  ")
         self.__client.request_nickname(new_name)
 
+    def __file_menu(self):
+        print("""
+            [1] Subir Archivo
+            [2] Mandar Archivo
+        """)
+
+        _opt = self.__input()
+
+        if _opt == 1:
+            self.__upload_file()
+        elif _opt == 2:
+            self.__send_file()
+        else:
+            print("[Nada que hacer]")
+            return
+        
+
     def __send(self):
         whom = input("[Destinatorio] ")
         msg = input("[Mensaje]\n")
@@ -99,6 +119,15 @@ class App:
             group = False
 
         self.__client.send_message(msg,whom,group)
+
+    def __send_file(self):
+        file_name = input("[Archivo] ")
+        dest = input ("[Destino] ") 
+        self.__client.send_file(file_name,dest)
+
+    def __upload_file(self):
+        file_path = input("[Path] ")
+        self.__client.upload_file(file_path)
 
     def __close(self):
         if self.__connected:
