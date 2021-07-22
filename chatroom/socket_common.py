@@ -18,7 +18,7 @@ class SocketConf():
     HEADER: int = 64
     FORMAT: str = "utf-8"
     DISCONNECT: str = "SCKBR"
-    SERVER_ID: str = "[SERVER]"
+    SERVER_ID: str = "SERVER"
         
 
 

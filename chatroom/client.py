@@ -17,6 +17,12 @@ class Client:
 
         self.__socket_client = None
         self.__connection_set = False
+        self.__message_list = []
+
+
+    @property
+    def msglist(self):
+        return self.__message_list
 
     def connect(self):
         ''' Abre la conexión entre cliente servidor'''
@@ -64,7 +70,7 @@ class Client:
                     message_len = int(message_head)
                     message = conn.recv(message_len).decode(conf.FORMAT)
                     msg = json.loads(message)
-                    print("[>>][{}]: {}".format(msg["from"],msg["payload"]))
+                    self.__message_list.append({"from":msg["from"],"payload":msg["payload"]})
                 except ValueError as err:
                     print(f"[FAILED] Likely incorrect Format or Header\n {err}")
                     self.__connection_set = False

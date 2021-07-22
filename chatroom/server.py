@@ -132,7 +132,7 @@ class ServerTCP():
             response["payload"]="Nickname No Disponible"
            
 
-        self.__broadcast(response,"[SERVER]")
+        self.__broadcast(response,conf.SERVER_ID)
 
     def _new_client(self,name, conn):
         """Crea un nuevo cliente
