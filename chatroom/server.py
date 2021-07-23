@@ -7,7 +7,7 @@ from socket_common import ServerConf as conf
 from server_options import SeverOptions as opt
 from server_groups import ServerGroup
 
-class ServerTCP():
+class ServerTCP(object):
     '''
     Modulo que da metodos para crear un servidor IP/TCP que acepta
     conexiones IPV4. Opcionalmente se configura mediante socket_common.

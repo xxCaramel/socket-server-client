@@ -19,13 +19,13 @@ class Client:
         self.__socket_client = None
         self.__connection_set = False
         self.__message_list = []
-        self.__file_dir = "./client/"
+        self.__file_dir = conf.DIR
 
 
     @property
     def msglist(self):
         return self.__message_list
-
+        
     def connect(self):
         ''' Abre la conexión entre cliente servidor'''
         self.__socket_client = socket.socket(

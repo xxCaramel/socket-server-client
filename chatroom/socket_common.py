@@ -36,5 +36,5 @@ class ServerConf(SocketConf):
 @dataclass
 class ClientConf(SocketConf):
     '''Configruaciones para cliente'''
-    pass
+    DIR: str = './client/'
 

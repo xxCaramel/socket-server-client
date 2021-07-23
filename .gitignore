@@ -8,6 +8,7 @@ __pycache__/
 
 #Upload folder
 uploads/
+client/
 # C extensions
 *.so
 
