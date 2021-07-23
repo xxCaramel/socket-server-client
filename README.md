@@ -48,3 +48,7 @@ Hereda de la clase cliente y agrega funciones como:
     request_nickname()
     request_addgroup()
     request_delgroup()
+
+## App
+
+Iniciliza una clase basica para acceso a las funciones del ChatClient

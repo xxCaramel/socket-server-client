@@ -82,7 +82,7 @@ class ServerTCP(object):
                             self.__broadcast(msg,client["id"])
                         print("[{}]: {}".format(client["id"],msg["payload"]))
                     except ValueError as err:
-                        print(f"[FAILED] Likely incorrect Format or Header\n {err}")
+                        print(f"[FAILED] Talvez formato incorrecto o header malo\n {err}")
                         conn_status = False
                 
 
